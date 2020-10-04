@@ -1,0 +1,19 @@
+{
+  "name": "use-jwt-auth",
+  "version": "0.0.1",
+  "main": "index.js",
+  "repository": "https://github.com/nksaraf/use-jwt-auth.git",
+  "author": "Nikhil Saraf <nsaraf98@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "build": "yarn tsup src/index.ts --format cjs,esm --dts --legacy-output"
+  },
+  "files": [
+    "README.md",
+    "dist"
+  ],
+  "devDependencies": {
+    "tsup": "^3.7.0",
+    "typescript": "^4.0.3"
+  }
+}
