@@ -9,17 +9,10 @@ export interface AuthTokens {
 }
 
 export interface DecodedJWT {
-  data: {
-    isImpersonated: boolean;
-    token: string;
-    userId: string;
-  };
-  email: string;
   exp: number;
   expDate: Date;
   iat: number;
   iatDate: Date;
-  userId: number;
 }
 
 export interface Storage<T = object> {
@@ -42,7 +35,9 @@ export interface AuthProviderOptions<TAuthState, TAuthenticatedUser> {
   shouldRefreshAuthState?(authState: TAuthState): boolean;
   getUser?(authState: TAuthState): TAuthenticatedUser | null;
   isValidAuthState?(authState: TAuthState): boolean;
-  refreshAuthState?(authState: TAuthState): Promise<TAuthState> | TAuthState;
+  refreshAuthState?(
+    authState: TAuthState
+  ): Promise<TAuthState | null> | TAuthState | null;
 }
 
 export interface UseAuthContext<TAuthState, TAuthenticatedUser> {
@@ -109,7 +104,7 @@ export function useAuthState<TAuthState, TAuthenticatedUser>({
           return {
             ...prevState,
             status: "signed_out",
-            tokens: null,
+            authState: null,
             user: null,
           } as const;
         case "LOAD_AUTH_STATE":
@@ -143,21 +138,21 @@ export function useAuthState<TAuthState, TAuthenticatedUser>({
     },
     {
       saveAuthState: (_, effect, dispatch) => {
-        storage?.save(effect.tokens);
+        storage?.save(effect.authState);
       },
       clearAuthState: (_, effect, dispatch) => {
         storage?.clear();
       },
       refreshAuthState: async (_, effect, dispatch) => {
         try {
-          const refeshedTokens = await refreshAuthState?.(effect.tokens);
-          if (refeshedTokens) {
+          const refreshedAuthState = await refreshAuthState?.(effect.authState);
+          if (refreshedAuthState) {
             dispatch({
               type: "SIGN_IN",
-              tokens: refeshedTokens,
+              authState: refreshedAuthState,
             });
           } else {
-            onError?.(new Error("No tokens found!"));
+            onError?.(new Error("No auth state found!"));
             dispatch({ type: "SIGN_OUT" });
           }
         } catch (e) {
@@ -171,7 +166,7 @@ export function useAuthState<TAuthState, TAuthenticatedUser>({
           if (item) {
             dispatch({
               type: "SIGN_IN",
-              tokens: item,
+              authState: item,
             });
           } else {
             dispatch({
@@ -237,7 +232,9 @@ export const JWTAuthProvider = ({
     refreshAuthState: refreshTokens,
   });
   return (
-    <AuthContext.Provider value={context}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ ...context }}>
+      {children}
+    </AuthContext.Provider>
   );
 };
 
